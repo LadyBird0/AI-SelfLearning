@@ -1,0 +1,151 @@
+from PriorityQueue import PriorityQueue
+
+
+def heuristic(actual, desti):
+    '''
+    Calcula l'heuristic del problema
+    :param actual: estat on ens trobam
+    :param desti: estat final
+    :return: valor de la funcio
+    '''
+
+    points = 0
+    for a, c in zip(actual, desti):
+        if a != '_' and a != c:
+            points += 1
+
+    return points + abs(desti.find("_") - actual.find("_"))
+
+
+def beautylist(llista):
+
+    cadena = "["
+    final = len(llista)
+    for idx, element in enumerate(llista):
+        cadena += element
+
+        if idx < final-1:
+            cadena += ", "
+
+    return cadena + "]"
+
+
+# Aquesta funcio podria estar millor programada, he intentat que sigui molt clara.
+def descendents(actual):
+    '''
+    Donat un estat calcula els successors
+    :param actual: String que representa un estat
+    :return: una llista de tuples, estat i pes
+    '''
+    fills = []
+    idx = actual.find("_")
+
+    # Desplaçament
+    if idx > 0:
+        llista = list(actual)
+        aux = llista[idx-1]
+        llista[idx-1] = "_"
+        llista[idx] = aux
+        fills.append(("".join(llista), 1))
+    if idx < len(actual)-1:
+        llista = list(actual)
+        aux = llista[idx + 1]
+        llista[idx + 1] = "_"
+        llista[idx] = aux
+        fills.append(("".join(llista), 1))
+    # Salt
+    if idx > 1:
+        llista = list(actual)
+        aux = llista[idx-2]
+        llista[idx-2] = "_"
+        if aux == 'X':
+            llista[idx] = 'C'
+        else:
+            llista[idx] = 'X'
+        fills.append(("".join(llista), 2))
+
+    if idx < len(actual)-2:
+        llista = list(actual)
+        aux = llista[idx + 2]
+        llista[idx + 2] = "_"
+        if aux == 'X':
+            llista[idx] = 'C'
+        else:
+            llista[idx] = 'X'
+        llista[idx] = aux
+        fills.append(("".join(llista), 2))
+
+    # Gir
+    for idx, moneda in enumerate(actual):
+        aux = list(actual)
+        if moneda == 'X':
+            aux[idx] = "C"
+            fills.append(("".join(aux), 2))
+        elif moneda == 'C':
+            aux[idx] = "X"
+            fills.append(("".join(aux), 2))
+
+    return fills
+
+
+def a_star_search(inici, objectiu, debug=True):
+    oberts = PriorityQueue()
+    oberts.put(inici, heuristic(objectiu, inici))
+    tancats = []
+    came_from = {}
+    cost_so_far = {}
+
+    came_from[inici] = None
+    cost_so_far[inici] = 0
+
+    if debug:
+        print("Iteración 0")
+        print("Abiertos(0)=" + str(oberts))
+        print("Cerrados(0)=" + beautylist(tancats))
+
+    iteracio = 1
+    trobat = False
+
+    while not oberts.empty() and not trobat:
+
+        actual = oberts.get()
+        tancats.append(actual)
+
+        if actual == objectiu:
+            trobat = True
+        else:
+            for seguent, cost in descendents(actual):
+                new_cost = cost_so_far[actual] + cost
+                if seguent not in cost_so_far or new_cost < cost_so_far[seguent]:
+                    cost_so_far[seguent] = new_cost
+                    priority = new_cost + heuristic(objectiu, seguent)
+                    oberts.put(seguent, priority)
+                    came_from[seguent] = actual
+
+            if debug:
+                print("Abiertos(" + str(iteracio) + ")=" + str(oberts))
+                print("Cerrados(" + str(iteracio) + ")=" + beautylist(tancats))
+
+            iteracio += 1
+
+    return came_from, cost_so_far
+
+
+start = "CXCX_"
+goal = "_XCXC"
+
+came_from, cost_so_far = a_star_search(start, goal)
+
+print("Resultats")
+print("Origen: " + start)
+print("Objectiu: " + goal)
+
+# Calcul cami final
+iterator = goal
+cami = [goal]
+while came_from[iterator]:
+    cami.append((came_from[iterator], cost_so_far[iterator]))
+    iterator = came_from[iterator]
+cami.reverse()
+
+print("Camí: " + str(cami))

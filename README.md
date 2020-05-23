@@ -1,0 +1,2 @@
+# AI-SelfLearning
+Fundamentals scripts
